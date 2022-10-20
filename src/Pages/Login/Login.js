@@ -1,12 +1,19 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Form from 'react-bootstrap/Form';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/AuthProvider/AuthProvider';
+import toast from 'react-hot-toast';
 
 
 const Login = () => {
 
-    const { logIn } = useContext(AuthContext);
+    const { logIn, setLoading } = useContext(AuthContext);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
+    const location = useLocation();
+
+    const from = location.state?.from?.pathname || '/';
 
     const handelLogin = (event) => {
         event.preventDefault();
@@ -16,12 +23,23 @@ const Login = () => {
 
         logIn(email, password)
             .then(result => {
-                console.log(result.user)
-                form.reset()
+                const user = result.user;
+                setError('');
+                form.reset();
+                if (user.emailVerified) {
+                    navigate(from, { replace: true });
+                }
+                else {
+                    toast.error('Your email is not verified. Please verify your email address.')
+                }
             })
-            .catch(error => console.error(error))
-
-
+            .catch(error => {
+                console.error(error);
+                setError(error.message)
+            })
+            .finally(() => {
+                setLoading(false)
+            })
     }
 
     return (
@@ -38,7 +56,7 @@ const Login = () => {
                 Login
             </Button> <br />
             <Form.Text className="text-danger">
-
+                {error}
             </Form.Text>
         </Form>
     );
